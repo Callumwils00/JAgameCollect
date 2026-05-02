@@ -32,7 +32,7 @@ mqtt_client.on_message = on_message
 mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60) 
 mqtt_client.loop_start()
 
-time.sleep(10)
+time.sleep(100)
 
 mqtt_client.loop_stop()
 mqtt_client.disconnect()
