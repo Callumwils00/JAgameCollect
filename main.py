@@ -35,7 +35,7 @@ def captureData():
 def on_connect(client, userdata, flags, rc):
     print("MQTT connected with result code", rc)
     client.subscribe(MQTT_TOPIC)
-    client.subscribe(MQTT_SEND_TOPIC)
+    #client.subscribe(MQTT_SEND_TOPIC)
     print("Subscribed to:", MQTT_TOPIC, " and ", MQTT_SEND_TOPIC) 
 
 def on_message(client, userdata, msg):
@@ -51,7 +51,7 @@ def on_message(client, userdata, msg):
     sense.clear(255,255,255)
     time.sleep(0.2)
     sense.clear()
-
+           
     with open(STATE_PATH, "r") as f:
         stateData = json.load(f)
     
