@@ -22,14 +22,13 @@ HEIGHT = 650
 config = camera.create_preview_configuration({'format': 'YUV420', 'size': (WIDTH, HEIGHT)})
 camera.configure(config)
 camera.start()
-stop_cascade = cv2.CascadeClassifier('stop_data.xml')
+#stop_cascade = cv2.CascadeClassifier('stop_data.xml')
 
 def captureData():
     # capture a frame 
-    im = camera.capture_array()
-    found = stop_cascade.detectMultiScale(im, minSize=(20,20))
-    for(x,y,w,h) in found:
-        cv2.rectangle(im, (x, y), (x + w, y + h), (0, 255, 0), 5)
+#    found = stop_cascade.detectMultiScale(im, minSize=(20,20))
+#    for(x,y,w,h) in found:
+#        cv2.rectangle(im, (x, y), (x + w, y + h), (0, 255, 0), 5)
     cv2.imshow("Camera", im)
 
 def on_connect(client, userdata, flags, rc):
@@ -63,6 +62,9 @@ def on_message(client, userdata, msg):
         print(f"Sent Message")
     else:
         print(f"Failed to send message")
+    
+    #im = camera.capture_array()
+    #cv2.imshow("Camera", im)
     
 def save_state(path=""):
     now = datetime.now()
@@ -109,6 +111,11 @@ mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
 mqtt_client.loop_start()
 
 #time.sleep(30)
+im = camera.capture_array()
+
+captureData()
+time.sleep(30)
+cv2.destroyAllWindows()
 
 time.sleep(30)
 
