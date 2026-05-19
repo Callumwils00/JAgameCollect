@@ -15,3 +15,4 @@ The lab will need a raspberrypi set up to run JAgameCollect and a separate machi
 
 If the experimenter wishes to monitor the ball tracking computer vision process using their laptop they can ssh in using x11 and allow their laptop to show the computer vision output stream. I have used this for testing using a laptop running Ubuntu linux, other operating systems that run different camera apps may need aditional configuration. 
 
+It is assumed that a technicion will set up the experiment and that the experimenter will analyse the data using an api call using Python/MATLAB/R but that outwith analysing their data the experimenter doesn't have programming skills.
