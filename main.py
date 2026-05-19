@@ -58,6 +58,8 @@ def captureData():
                 with open(STATE_PATH, "r") as f:
                     stateData = json.load(f)
                 stateData["playerOneScore"] = int(stateData["playerOneScore"]) + 1
+                #stateData = stateData.replace("'", '"')
+                print(stateData)
                 status = mqtt_client.publish(MQTT_SEND_TOPIC, stateData)
                 if status == 0:
                     print(f"Sent Message")
@@ -68,6 +70,8 @@ def captureData():
                 with open(STATE_PATH, "r") as f:
                     stateData = json.load(f)
                 stateData["playerTwoScore"] = int(stateData["playerTwoScore"]) + 1
+                #stateData = stateData.replace("'", '"')
+                print(stateData)
                 status = mqtt_client.publish(MQTT_SEND_TOPIC, stateData)
                 if status == 0:
                     print(f"Sent Message")
