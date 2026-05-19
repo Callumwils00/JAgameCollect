@@ -85,7 +85,7 @@ def captureData():
 
 def on_connect(client, userdata, flags, rc):
     print("MQTT connected with result code", rc)
-    client.subscribe(MQTT_TOPIC)
+    client.subscribe(MQTT_TOPIC, 1)
     #client.subscribe(MQTT_SEND_TOPIC)
     print("Subscribed to:", MQTT_TOPIC, " and ", MQTT_SEND_TOPIC) 
 
@@ -121,11 +121,11 @@ def on_message(client, userdata, msg):
         print(f"Failed to send message")
     
    # time.sleep(5)
-   # while True:
-   #     captureData()
-   #     if cv2.waitKey(1) & 0xFF == ord('q'):
-   #         break
-   # cv2.destroyAllWindows()
+    while True:
+        captureData()
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    cv2.destroyAllWindows()
 
     
     #im = camera.capture_array()
