@@ -58,7 +58,14 @@ def captureData():
                 with open(STATE_PATH, "r") as f:
                     stateData = json.load(f)
                 stateData["playerOneScore"] = int(stateData["playerOneScore"]) + 1
-                #stateData = stateData.replace("'", '"')
+                
+                with open(STATE_PATH, "w") as f:
+                    json.dump(stateData, f)
+
+                with open(STATE_PATH, "r") as f:
+                    stateData = json.load(f)
+                stateData = str(stateData)
+                stateData = stateData.replace("'", '"')
                 print(stateData)
                 status = mqtt_client.publish(MQTT_SEND_TOPIC, stateData)
                 if status == 0:
@@ -70,7 +77,13 @@ def captureData():
                 with open(STATE_PATH, "r") as f:
                     stateData = json.load(f)
                 stateData["playerTwoScore"] = int(stateData["playerTwoScore"]) + 1
-                #stateData = stateData.replace("'", '"')
+                with open(STATE_PATH, "w") as f:
+                    json.dump(stateData, f)
+
+                with open(STATE_PATH, "r") as f:
+                    stateData = json.load(f)
+                stateData = str(stateData)
+                stateData = stateData.replace("'", '"')
                 print(stateData)
                 status = mqtt_client.publish(MQTT_SEND_TOPIC, stateData)
                 if status == 0:
@@ -118,23 +131,23 @@ def on_message(client, userdata, msg):
     stringState = str(stateData)
     stringState = stringState.replace("'", '"')
     print(stringState)
-    status = mqtt_client.publish(MQTT_SEND_TOPIC, stringState, 0) 
+    status = mqtt_client.publish(MQTT_SEND_TOPIC, stringState, 1) 
     if status == 0:
         print(f"Sent Message")
     else:
-        print(f"Failed to send message")
+        print(f"Failed to send message") 
     
-   # time.sleep(5)
+    #im = camera.capture_array()
+    #cv2.imshow("Camera", im)
+def main():
     while True:
         captureData()
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-    cv2.destroyAllWindows()
+        cv2.destroyAllWindows()
 
-    
-    #im = camera.capture_array()
-    #cv2.imshow("Camera", im)
-    
+
+
 def save_state(path=""):
     now = datetime.now()
     payload = {
@@ -181,6 +194,7 @@ mqtt_client.loop_start()
 
 time.sleep(30)
 
+main()
 """while True:
     captureData()
     if cv2.waitKey(1) & 0xFF == ord('q'):
