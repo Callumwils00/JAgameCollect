@@ -1,18 +1,21 @@
 #! /bin/python
 
 import paho.mqtt.client as mqtt
-import time
 import json
 from sense_hat import SenseHat
 from io import BytesIO
 from picamera2 import Picamera2
 import cv2
+import time
+import sys
 
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
 MQTT_TOPIC = "test/JAgame/fromWebPage"
 MQTT_SEND_TOPIC = "test/JAgame/toWebPage"
 STATE_PATH = "data/state.json"
+runGame = False
+endProgram = False
 
 sense = SenseHat()
 my_stream = BytesIO()
@@ -28,6 +31,7 @@ def captureData():
     # capture a frame
     global tracker # the use of the global keyword means that the global tracker variable is used. This can
     # change outside of the scope of the function
+    global runGame
     im = camera.capture_array()
     gray = cv2.cvtColor(im, cv2.COLOR_RGB2GRAY)#im[:HEIGHT, :]#cv2.cvtColor(im, cv2.COLOR_YUV2GRAY_I420)
     gausBlur = cv2.GaussianBlur(gray, (5, 5), 0)
@@ -41,7 +45,7 @@ def captureData():
         print(f"Contours found: {len(contours)}")
         if cv2.contourArea(largest) > 20:
             x, y, w, h = cv2.boundingRect(largest)
-            tracker = cv2.legacy.TrackerMOSSE_create()
+            tracker = cv2.TrackerCSRT_create()
             tracker.init(output, (x, y, w, h))
     else:
         sucess, bbox = tracker.update(output)
@@ -57,31 +61,55 @@ def captureData():
                 print(f"Somebody Scored")
                 with open(STATE_PATH, "r") as f:
                     stateData = json.load(f)
+
                 stateData["playerOneScore"] = int(stateData["playerOneScore"]) + 1
                 
                 with open(STATE_PATH, "w") as f:
                     json.dump(stateData, f)
 
                 with open(STATE_PATH, "r") as f:
-                    stateData = json.load(f)
-                stateData = str(stateData)
+                    stateDataJson = json.load(f)
+                stateData = str(stateDataJson)
                 stateData = stateData.replace("'", '"')
                 print(stateData)
-                status = mqtt_client.publish(MQTT_SEND_TOPIC, stateData)
+               
+                # If a score field in the state is greater than 10 something has gone wron
+                # it is included here as some defensive coding
+                if int(stateDataJson["playerOneScore"]) >=  10:
+                    stateDataJson["winner"] = stateDataJson["PlayerOneName"]
+                    with open(STATE_PATH, "w") as f:
+                        json.dump(stateDataJson, f)
+
+                    with open(STATE_PATH, "r") as f:
+                        stateData = json.load(f)
+                    stateData = str(stateData)
+                    stateData = stateData.replace("'", '"')
+
+                    status = mqtt_client.publish(MQTT_SEND_TOPIC, stateData)
+                    runGame = False  
+                else:
+                    status = mqtt_client.publish(MQTT_SEND_TOPIC, stateData)
+
                 if status == 0:
                     print(f"Sent Message")
                 else:
                     print(f"Failed to send message")
+                
+
             elif 20 < cx < 30 & 20 < cy < 30:
                 print(f"Somebody Scored")
                 with open(STATE_PATH, "r") as f:
                     stateData = json.load(f)
+                
+
                 stateData["playerTwoScore"] = int(stateData["playerTwoScore"]) + 1
+                
                 with open(STATE_PATH, "w") as f:
                     json.dump(stateData, f)
 
                 with open(STATE_PATH, "r") as f:
                     stateData = json.load(f)
+                
                 stateData = str(stateData)
                 stateData = stateData.replace("'", '"')
                 print(stateData)
@@ -90,6 +118,11 @@ def captureData():
                     print(f"Sent Message")
                 else:
                     print(f"Failed to send message")
+            
+                
+                if int(stateData["playerTwoScore"]) >= 10:
+                    stateData["winner"] = stateData["PlayerTwoName"]
+                    runGame = False 
             else:
                 print(f"No score")
         else:
@@ -116,6 +149,7 @@ def on_message(client, userdata, msg):
     # Both players start with 0 scores
     data["playerOneScore"] = 0
     data["playerTwoScore"] = 0
+    data["winner"] = ""
     with open(STATE_PATH, "w") as f:
         json.dump(data, f)
     print("State updated:", payload_str)
@@ -135,16 +169,19 @@ def on_message(client, userdata, msg):
     if status == 0:
         print(f"Sent Message")
     else:
-        print(f"Failed to send message") 
+        print(f"Failed to send message")
+    global runGame
+    runGame = True
     
     #im = camera.capture_array()
     #cv2.imshow("Camera", im)
 def main():
-    while True:
+    while runGame is True:
         captureData()
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            cv2.destroyAllWindows() 
             break
-        cv2.destroyAllWindows()
+
 
 
 
@@ -192,9 +229,10 @@ mqtt_client.on_publish = on_publish
 mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60) 
 mqtt_client.loop_start()
 
-time.sleep(30)
-
+while not runGame:
+    time.sleep(0.1)
 main()
+sys.exit("Ending Game")
 """while True:
     captureData()
     if cv2.waitKey(1) & 0xFF == ord('q'):
