@@ -8,6 +8,8 @@ from picamera2 import Picamera2
 import cv2
 import time
 import sys
+import pandas as pd
+import numpy as np
 
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
@@ -26,6 +28,11 @@ config = camera.create_preview_configuration({'format': 'RGB888', 'size': (WIDTH
 camera.configure(config)
 camera.start()
 tracker = None
+
+# Initalise an empty numpy array 
+
+gameData = np.array([[], [], [], [], [], [],[]])
+
 
 def captureData():
     # capture a frame
@@ -150,6 +157,9 @@ def on_message(client, userdata, msg):
     data["playerOneScore"] = 0
     data["playerTwoScore"] = 0
     data["winner"] = ""
+
+    gameData = np.append(gameData, np.array([data["playerOneName"], data["playerTwoName"], data["ts"],  data["playerOneScore"], data["playerTwoScore"], None, None]))
+
     with open(STATE_PATH, "w") as f:
         json.dump(data, f)
     print("State updated:", payload_str)
@@ -229,9 +239,11 @@ mqtt_client.on_publish = on_publish
 mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60) 
 mqtt_client.loop_start()
 
-while not runGame:
-    time.sleep(0.1)
+#while not runGame:
+#    time.sleep(0.1)
+time.sleep(30)
 main()
+print(gameData)
 sys.exit("Ending Game")
 """while True:
     captureData()
