@@ -1,21 +1,26 @@
 #! /bin/python
-
-import paho.mqtt.client as mqtt
 import json
 from sense_hat import SenseHat
 from io import BytesIO
-from picamera2 import Picamera2
 import cv2
 import time
 import sys
 import pandas as pd
 import numpy as np
+import paho.mqtt.client as mqtt
+from picamera2 import Picamera2
 
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
 MQTT_TOPIC = "test/JAgame/fromWebPage"
 MQTT_SEND_TOPIC = "test/JAgame/toWebPage"
 STATE_PATH = "data/state.json"
+
+# There's a problem to solve regarding launching the data collection process,
+# We only want it to kick off after the players have input their names and started the game,
+# and to cleanly exit after the game has finished
+# Since this is a prototype I choose to use global variables that are switched from False to 
+# true when the game has started and ended respectively
 runGame = False
 endProgram = False
 
@@ -33,27 +38,90 @@ tracker = None
 
 gameData = np.array([[], [], [], [], [], [],[]])
 
+def detectBall(edges = None):
+    global tracker
+    contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    largest = max(contours, key=cv2.contourArea)
+    print(f"Contours found: {len(contours)}")
+    if cv2.contourArea(largest) > 20:
+        # In python you can assign values to multiple objects using assignment without them being a list or array
+        # Here I only want to draw a rectangle around the largest contour, representing the ball... hopefully
+        # https://gist.github.com/bigsnarfdude/d811e31ee17495f82f10db12651ae82d
+        x, y, w, h = cv2.boundingRect(largest)
+        tracker = cv2.TrackerCSRT_create()
+        return x, y, w, h, tracker
+
+def trackBall(side, Min = None, xMax = None, yMin = None, yMax = None, maxScore= 10, statePath = STATE_PATH, mqttTopic = MQTT_SEND_TOPIC):
+    global gameData
+    
+    if side not in ["playerOne", "playerTwo"]:
+        print(f"side parameter must be in ['playerOne', 'playerTwo']")
+        return None 
+
+    # Store json key references as strings
+    playerName = side + "Name"
+    playerScore = side + "Score"
+    # Using and rather than bitwise &
+    if xMin < cx < xMax and yMin < cy < yMax: 
+        print(f"Somebody Scored")
+        with open(statePath, "r") as f:
+            stateData = json.load(f)
+            stateData[playerScore] = int(stateData[playerScore]) + 1
+                
+        with open(statePath, "w") as f:
+            json.dump(stateData, f)
+
+        with open(statePath, "r") as f:
+            stateDataJson = json.load(f)
+            stateData = str(stateDataJson)
+            stateData = stateData.replace("'", '"')
+            print(stateData)
+               
+            # If a score field in the state is greater than 10 something has gone wron
+            # it is included here as some defensive coding
+        if int(stateDataJson[playerScore]) >=  maxScore:
+            stateDataJson["winner"] = stateDataJson[playerName]
+            with open(statePath, "w") as f:
+                json.dump(stateDataJson, f)
+
+            with open(statePatj, "r") as f:
+                stateData = json.load(f)
+            
+            stateData = str(stateData)
+            stateData = stateData.replace("'", '"')
+
+            status = mqtt_client.publish(mqttTopic, stateData)
+            runGame = False  
+        else:
+            status = mqtt_client.publish(mqttTopic, stateData)
+
+        if status == 0:
+            print(f"Sent Message")
+        else:
+            print(f"No Score")
+
+        gameData = np.append
+
+
+
 
 def captureData():
     # capture a frame
     global tracker # the use of the global keyword means that the global tracker variable is used. This can
     # change outside of the scope of the function
     global runGame
+    global gameData
     im = camera.capture_array()
     gray = cv2.cvtColor(im, cv2.COLOR_RGB2GRAY)#im[:HEIGHT, :]#cv2.cvtColor(im, cv2.COLOR_YUV2GRAY_I420)
     gausBlur = cv2.GaussianBlur(gray, (5, 5), 0)
+    # If Canny edge detection is used without applying gaussian bluring, ie. high pass filtering it will
+    # pick up too many artifacts
     edges = cv2.Canny(gausBlur, 20, 40)
-    #ret, thresh = cv2.threshold(edges, 127, 255, 0)
     output = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
     
     if tracker == None:
-        contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        largest = max(contours, key=cv2.contourArea)
-        print(f"Contours found: {len(contours)}")
-        if cv2.contourArea(largest) > 20:
-            x, y, w, h = cv2.boundingRect(largest)
-            tracker = cv2.TrackerCSRT_create()
-            tracker.init(output, (x, y, w, h))
+        x, y, w, h, tracker = ballDetector(grayScaleArray = output, edges = edges)
+        tracker.init(output, (x, y, w, h))
     else:
         sucess, bbox = tracker.update(output)
         if sucess:
@@ -63,81 +131,26 @@ def captureData():
             cv2.rectangle(output, (x,  y), (x + w, y + h), (0, 255, 0), 2)
             cv2.circle(output, (cx, cy), 5, (0, 0, 255), -1)
             print(f"Object at: ({cx}, {cy})")
-            # using and rather than & as & is a bitwise operand which leads to a logical error
-            if 300 < cx < 500 and 300 < cy < 500: 
-                print(f"Somebody Scored")
-                with open(STATE_PATH, "r") as f:
-                    stateData = json.load(f)
-
-                stateData["playerOneScore"] = int(stateData["playerOneScore"]) + 1
-                
-                with open(STATE_PATH, "w") as f:
-                    json.dump(stateData, f)
-
-                with open(STATE_PATH, "r") as f:
-                    stateDataJson = json.load(f)
-                stateData = str(stateDataJson)
-                stateData = stateData.replace("'", '"')
-                print(stateData)
-               
-                # If a score field in the state is greater than 10 something has gone wron
-                # it is included here as some defensive coding
-                if int(stateDataJson["playerOneScore"]) >=  10:
-                    stateDataJson["winner"] = stateDataJson["PlayerOneName"]
-                    with open(STATE_PATH, "w") as f:
-                        json.dump(stateDataJson, f)
-
-                    with open(STATE_PATH, "r") as f:
-                        stateData = json.load(f)
-                    stateData = str(stateData)
-                    stateData = stateData.replace("'", '"')
-
-                    status = mqtt_client.publish(MQTT_SEND_TOPIC, stateData)
-                    runGame = False  
-                else:
-                    status = mqtt_client.publish(MQTT_SEND_TOPIC, stateData)
-
-                if status == 0:
-                    print(f"Sent Message")
-                else:
-                    print(f"Failed to send message")
-                
-
-            elif 20 < cx < 30 & 20 < cy < 30:
-                print(f"Somebody Scored")
-                with open(STATE_PATH, "r") as f:
-                    stateData = json.load(f)
-                
-
-                stateData["playerTwoScore"] = int(stateData["playerTwoScore"]) + 1
-                
-                with open(STATE_PATH, "w") as f:
-                    json.dump(stateData, f)
-
-                with open(STATE_PATH, "r") as f:
-                    stateData = json.load(f)
-                
-                stateData = str(stateData)
-                stateData = stateData.replace("'", '"')
-                print(stateData)
-                status = mqtt_client.publish(MQTT_SEND_TOPIC, stateData)
-                if status == 0:
-                    print(f"Sent Message")
-                else:
-                    print(f"Failed to send message")
             
-                
-                if int(stateData["playerTwoScore"]) >= 10:
-                    stateData["winner"] = stateData["PlayerTwoName"]
-                    runGame = False 
-            else:
-                print(f"No score")
+            trackBall(300, 500, 500, 300, "playerOne")
+
+            trackBall(20, 30, 20, 30, "playerTwo")
+
+            # By placing the data appending line here, no data is appended when there is a frame with a lost ball. Since the timestamp is captured the scientist will still be able to reconstruct the time series of the ball movement.
+     #       gameData = np.append(gameData, np.array([gameData[1], gameData[2], int(time.time()),  stateDataJson["playerOneScore"], stateDataJson["playerTwoScore"], stateDataJson["winner"], None]))
+
+
         else:
             tracker = None # The ball is lost so re-detect in the next frame
+
+        
+        gameData = np.append(gameData, np.array([data["PlayerOneName"], data["PlayerTwoName"], data["ts"],  data["playerOneScore"], data["playerTwoScore"], None, None]))
         try:
             cv2.imshow("Camera", output)
         except:
             print(f"Cannot forward to camera over ssh using x11")
+
+
         
 
 def on_connect(client, userdata, flags, rc):
@@ -158,7 +171,8 @@ def on_message(client, userdata, msg):
     data["playerTwoScore"] = 0
     data["winner"] = ""
 
-    gameData = np.append(gameData, np.array([data["playerOneName"], data["playerTwoName"], data["ts"],  data["playerOneScore"], data["playerTwoScore"], None, None]))
+    global gameData
+    gameData = np.append(gameData, np.array([data["PlayerOneName"], data["PlayerTwoName"], data["ts"],  data["playerOneScore"], data["playerTwoScore"], None, None]))
 
     with open(STATE_PATH, "w") as f:
         json.dump(data, f)
@@ -239,18 +253,14 @@ mqtt_client.on_publish = on_publish
 mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60) 
 mqtt_client.loop_start()
 
-#while not runGame:
-#    time.sleep(0.1)
-time.sleep(30)
+# This will hold the program from starting to collect game data until the 
+# game is started from the web page
+while not runGame:
+    time.sleep(0.1)
 main()
 print(gameData)
+
 sys.exit("Ending Game")
-"""while True:
-    captureData()
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-         break
-    # Release the camera and close the windows
-    cv2.destroyAllWindows()
-"""
+
 mqtt_client.loop_stop()
 mqtt_client.disconnect()
