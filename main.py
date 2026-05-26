@@ -9,6 +9,8 @@ import pandas as pd
 import numpy as np
 import paho.mqtt.client as mqtt
 from picamera2 import Picamera2
+import warnings
+import requests
 
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
@@ -51,12 +53,13 @@ def detectBall(edges = None):
         tracker = cv2.TrackerCSRT_create()
         return x, y, w, h, tracker
 
-def trackBall(side, Min = None, xMax = None, yMin = None, yMax = None, maxScore= 10, statePath = STATE_PATH, mqttTopic = MQTT_SEND_TOPIC):
+def trackBall(side, cx, cy, xMin = None, xMax = None, yMin = None, yMax = None, maxScore= 10, statePath = STATE_PATH, mqttTopic = MQTT_SEND_TOPIC):
     global gameData
+    global runGame
     
     if side not in ["playerOne", "playerTwo"]:
-        print(f"side parameter must be in ['playerOne', 'playerTwo']")
-        return None 
+        warnings.warn("side parameter must be in ['playerOne', 'playerTwo']")
+        #return None 
 
     # Store json key references as strings
     playerName = side + "Name"
@@ -64,15 +67,18 @@ def trackBall(side, Min = None, xMax = None, yMin = None, yMax = None, maxScore=
     # Using and rather than bitwise &
     if xMin < cx < xMax and yMin < cy < yMax: 
         print(f"Somebody Scored")
+        
         with open(statePath, "r") as f:
             stateData = json.load(f)
-            stateData[playerScore] = int(stateData[playerScore]) + 1
+
+        stateData[playerScore] = int(stateData[playerScore]) + 1
                 
         with open(statePath, "w") as f:
             json.dump(stateData, f)
 
         with open(statePath, "r") as f:
             stateDataJson = json.load(f)
+            
             stateData = str(stateDataJson)
             stateData = stateData.replace("'", '"')
             print(stateData)
@@ -80,14 +86,15 @@ def trackBall(side, Min = None, xMax = None, yMin = None, yMax = None, maxScore=
             # If a score field in the state is greater than 10 something has gone wron
             # it is included here as some defensive coding
         if int(stateDataJson[playerScore]) >=  maxScore:
-            stateDataJson["winner"] = stateDataJson[playerName]
+
+            stateDataJson["winner"] = playerName
             with open(statePath, "w") as f:
                 json.dump(stateDataJson, f)
 
-            with open(statePatj, "r") as f:
-                stateData = json.load(f)
+            with open(statePath, "r") as f:
+                stateDataJson = json.load(f)
             
-            stateData = str(stateData)
+            stateData = str(stateDataJson)
             stateData = stateData.replace("'", '"')
 
             status = mqtt_client.publish(mqttTopic, stateData)
@@ -100,7 +107,11 @@ def trackBall(side, Min = None, xMax = None, yMin = None, yMax = None, maxScore=
         else:
             print(f"No Score")
 
-        gameData = np.append
+       # with open(statePath, "r") as f:
+        #    stateDataJson = json.load(f)
+
+       # gameData = np.append(gameData, np.array([stateDataJson["PlayerOneName"], stateDataJson["PlayerTwoName"], stateDataJson["ts"],  stateDataJson["playerOneScore"], stateDataJson["playerTwoScore"], None, None]))
+       # print(gameData)
 
 
 
@@ -120,7 +131,7 @@ def captureData():
     output = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
     
     if tracker == None:
-        x, y, w, h, tracker = ballDetector(grayScaleArray = output, edges = edges)
+        x, y, w, h, tracker = detectBall(edges = edges)
         tracker.init(output, (x, y, w, h))
     else:
         sucess, bbox = tracker.update(output)
@@ -131,10 +142,19 @@ def captureData():
             cv2.rectangle(output, (x,  y), (x + w, y + h), (0, 255, 0), 2)
             cv2.circle(output, (cx, cy), 5, (0, 0, 255), -1)
             print(f"Object at: ({cx}, {cy})")
-            
-            trackBall(300, 500, 500, 300, "playerOne")
+           # Configuring the goal areas 
+            (h, w) = im.shape[:2]
 
-            trackBall(20, 30, 20, 30, "playerTwo")
+            xMin = 0
+            xMax = w
+            yMin = 0
+            yMax = h // 4
+
+            trackBall("playerOne", cx, cy, xMin, xMax, yMin, yMax)
+
+            yMin = (h // 4) * 3
+            yMax = h
+            trackBall("playerTwo", cx, cy, xMin, xMax, yMin, yMax)
 
             # By placing the data appending line here, no data is appended when there is a frame with a lost ball. Since the timestamp is captured the scientist will still be able to reconstruct the time series of the ball movement.
      #       gameData = np.append(gameData, np.array([gameData[1], gameData[2], int(time.time()),  stateDataJson["playerOneScore"], stateDataJson["playerTwoScore"], stateDataJson["winner"], None]))
@@ -144,7 +164,10 @@ def captureData():
             tracker = None # The ball is lost so re-detect in the next frame
 
         
-        gameData = np.append(gameData, np.array([data["PlayerOneName"], data["PlayerTwoName"], data["ts"],  data["playerOneScore"], data["playerTwoScore"], None, None]))
+        with open(STATE_PATH, "r") as f:
+            stateData = json.load(f)
+
+        gameData = np.append(gameData, np.array([stateData["PlayerOneName"], stateData["PlayerTwoName"], stateData["ts"],  stateData["playerOneScore"], stateData["playerTwoScore"], None, None]))
         try:
             cv2.imshow("Camera", output)
         except:
@@ -258,7 +281,18 @@ mqtt_client.loop_start()
 while not runGame:
     time.sleep(0.1)
 main()
-print(gameData)
+
+
+gameData = np.reshape(gameData, (-1, 7))
+
+gameDataPd = pd.DataFrame({'playerOneName': gameData[:,0], 'playerTwoName': gameData[:,1], 'timeStamp': gameData[:,2], 'playerOneScore': gameData[:,3], 'playerTwoScore': gameData[:,4], 'gyroOne': gameData[:,5], 'gyroTwo': gameData[:,6]})
+
+gameDataJson = gameDataPd.to_json(orient = "records")
+print(gameDataJson)
+
+url = "http://127.0.0.1:5000"
+
+requests.post(url, gameDataJson)
 
 sys.exit("Ending Game")
 
