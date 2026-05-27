@@ -13,6 +13,9 @@ import warnings
 import requests
 
 MQTT_BROKER = "broker.hivemq.com"
+# The MQTT port here is different to the port referenced in the web page (8884)
+# That is because this program can send to the MQTT broker directly since it isn't sending
+# from a web browser like the webpage that needs to use websockets.
 MQTT_PORT = 1883
 MQTT_TOPIC = "test/JAgame/fromWebPage"
 MQTT_SEND_TOPIC = "test/JAgame/toWebPage"
@@ -167,7 +170,7 @@ def captureData():
         with open(STATE_PATH, "r") as f:
             stateData = json.load(f)
 
-        gameData = np.append(gameData, np.array([stateData["PlayerOneName"], stateData["PlayerTwoName"], stateData["ts"],  stateData["playerOneScore"], stateData["playerTwoScore"], None, None]))
+        gameData = np.append(gameData, np.array([stateData["PlayerOneName"], stateData["PlayerTwoName"], stateData["ts"],  stateData["playerOneScore"], stateData["playerTwoScore"], cx, cy]))
         try:
             cv2.imshow("Camera", output)
         except:
@@ -290,9 +293,10 @@ gameDataPd = pd.DataFrame({'playerOneName': gameData[:,0], 'playerTwoName': game
 gameDataJson = gameDataPd.to_json(orient = "records")
 print(gameDataJson)
 
-url = "http://127.0.0.1:5000"
+# Need to point the url to my laptop not to localhost, since the api isn't running locally
+url = "http://192.168.1.124:5000"
 
-requests.post(url, gameDataJson)
+requests.put(url, gameDataJson)
 
 sys.exit("Ending Game")
 
