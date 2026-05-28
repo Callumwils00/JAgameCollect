@@ -1,10 +1,43 @@
 #! /bin/python
+from io import BytesIO
+from picamera2 import Picamera2
+from sense_hat import SenseHat
+import cv2
+import json
+import time
+import numpy as np
+
+tracker = None
+STATE_PATH = "data/state.json"
+MQTT_SEND_TOPIC = "test/JAgame/toWebPage"
+
+WIDTH = 700
+HEIGHT = 700
+# To configure the camera
+def setup_camera():
+    camera = Picamera2()
+    config = camera.create_preview_configuration({'format': 'RGB888', 'size': (WIDTH, HEIGHT)})        
+    camera.configure(config)
+    camera.start()
+    return camera
 
 def detectBall(edges = None):
     global tracker
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     largest = max(contours, key=cv2.contourArea)
     print(f"Contours found: {len(contours)}")
+def detectBall(edges = None):
+    global tracker
+    contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    largest = max(contours, key=cv2.contourArea)
+    print(f"Contours found: {len(contours)}")
+    if cv2.contourArea(largest) > 20:
+        # In python you can assign values to multiple objects using assignment without them being a list or array
+        # Here I only want to draw a rectangle around the largest contour, representing the ball... hopefully
+        # https://gist.github.com/bigsnarfdude/d811e31ee17495f82f10db12651ae82d
+        x, y, w, h = cv2.boundingRect(largest)
+        tracker = cv2.TrackerCSRT_create()
+        return x, y, w, h, tracker
     if cv2.contourArea(largest) > 20:
         # In python you can assign values to multiple objects using assignment without them being a list or array
         # Here I only want to draw a rectangle around the largest contour, representing the ball... hopefully
@@ -82,7 +115,7 @@ def trackBall(side, cx, cy, xMin = None, xMax = None, yMin = None, yMax = None, 
 
 
 
-def captureData():
+def captureData(camera, dataArray):
     # capture a frame
     global tracker # the use of the global keyword means that the global tracker variable is used. This can
     # change outside of the scope of the function
@@ -135,7 +168,7 @@ def captureData():
         with open(STATE_PATH, "r") as f:
             stateData = json.load(f)
 
-        gameData = np.append(gameData, np.array([stateData["playerOneName"], stateData["playerTwoName"], stateData["ts"],  stateData["playerOneScore"], stateData["playerTwoScore"], cx, cy]))
+        gameData = np.append(dataArray, np.array([stateData["playerOneName"], stateData["playerTwoName"], stateData["ts"],  stateData["playerOneScore"], stateData["playerTwoScore"], cx, cy]))
         try:
             cv2.imshow("Camera", output)
         except:

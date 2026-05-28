@@ -11,7 +11,7 @@ import paho.mqtt.client as mqtt
 from picamera2 import Picamera2
 import warnings
 import requests
-import functions
+import src.functions as functions
 
 MQTT_BROKER = "broker.hivemq.com"
 # The MQTT port here is different to the port referenced in the web page (8884)
@@ -30,17 +30,12 @@ STATE_PATH = "data/state.json"
 runGame = False
 endProgram = False
 
-
-sense = SenseHat()
-my_stream = BytesIO()
-camera = Picamera2()
+camera = functions.setup_camera()
 WIDTH = 700
 HEIGHT = 700
-# To use the camera we configure the preview
-config = camera.create_preview_configuration({'format': 'RGB888', 'size': (WIDTH, HEIGHT)})
-camera.configure(config)
-camera.start()
+
 tracker = None
+sense = SenseHat()
 
 # Initalise an empty numpy array 
 
@@ -99,15 +94,13 @@ def on_message(client, userdata, msg):
     #im = camera.capture_array()
     #cv2.imshow("Camera", im)
 def main():
+    global camera
     while runGame is True:
         on_message
-        captureData()
+        functions.captureData(camera, gameData)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             cv2.destroyAllWindows() 
             break
-
-
-
 
 def save_state(path=""):
     now = datetime.now()
@@ -126,24 +119,6 @@ def on_publish(client, userdata, msg):
         data = json.load(file)
     print("publishing message")
 
-    #status = client.publish(MQTT_SEND_TOPIC, data)
-    #if status == 0:
-    #    print(f"Sent Message")
-   # else:
-    #    print(f"Failed to send message")
-#with open(STATE_PATH, "r") as f:
- #       stateData = json.load(f)
-
-   # stringState = str(stateData)
-  #  stringState = stringState.replace("'", '"')
-   # print(stringState)
-   # status = client.publish(MQTT_SEND_TOPIC, stringState) 
-   # if status == 0:
-   #     print(f"Sent Message")
-   # else:
-   #     print(f"Failed to send message")
-
-
 # Set up MQTT client
 mqtt_client = mqtt.Client()
 mqtt_client.on_connect = on_connect 
@@ -155,9 +130,10 @@ mqtt_client.loop_start()
 
 # This will hold the program from starting to collect game data until the 
 # game is started from the web page
-while not runGame:
-    time.sleep(0.1)
-main()
+if __name__ == "__main__":
+    while not runGame:
+        time.sleep(0.1)
+    main()
 
 
 gameData = np.reshape(gameData, (-1, 7))
