@@ -17,7 +17,7 @@ Below I have given comprehensive information on setting up the experiment. Some 
 \
 ![Fig.3](data/ExperimentImage3.png)
 \
-[![Demo video](data/X11monitoring.png)](data/Demo.mp4)
+![Demo video](data/Demo.mp4)
 ### Requirements:
 
 * A raspberrypi compatible with the camera module 3 and the sense hat. This platform was developed on a raspberrypi 4B, but should work on other RPi's with the 40-pin GPIO headers.
