@@ -53,7 +53,7 @@ def on_message(client, userdata, msg):
     global gameData
     print("MQTT message on ", msg.topic)
     payload_str = msg.payload.decode("utf-8")
-    # Setting up the initial state of the experiment
+    # Setting up the initial istate of the experiment
     data = json.loads(payload_str)
     
     if(data["quit"] == "true"):
@@ -67,16 +67,10 @@ def on_message(client, userdata, msg):
     data["playerTwoScore"] = 0
     data["winner"] = ""
 
-    gameData = np.append(gameData, np.array([data["playerOneName"], data["playerTwoName"], data["ts"],  data["playerOneScore"], data["playerTwoScore"], None, None]))
-
     with open(STATE_PATH, "w") as f:
         json.dump(data, f)
     print("State updated:", payload_str)
-    # The game starts when the sense hat flashes
-    time.sleep(3)
-    sense.clear(255,255,255)
-    time.sleep(0.2)
-    sense.clear()
+    
            
     with open(STATE_PATH, "r") as f:
         stateData = json.load(f)
@@ -85,6 +79,7 @@ def on_message(client, userdata, msg):
     stringState = stringState.replace("'", '"')
     print(stringState)
     status = mqtt_client.publish(MQTT_SEND_TOPIC, stringState, 1) 
+    
     if status == 0:
         print(f"Sent Message")
     else:
@@ -94,6 +89,24 @@ def on_message(client, userdata, msg):
     
     #im = camera.capture_array()
     #cv2.imshow("Camera", im)
+
+def save_state(path=""):
+    now = datetime.now()
+    payload = {
+           # "player0ne": name1,
+           # "playerTwo": name2,
+            "playerOneScore": 0,
+            "playerTwoScore": 1
+            }
+    with open(path, "w") as f:
+        json.dump(payload, f)
+    print("State saved:", payload)
+
+def on_publish(client, userdata, msg):
+    with open(STATE_PATH, "r") as file:
+        data = json.load(file)
+    print("publishing message")
+    
 def main():
     global camera
     while runGame is True:
