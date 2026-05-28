@@ -10,6 +10,7 @@ JAgameCollect uses a raspberrypi to collect visual and gyroscopic information ab
  * A camera module 3. You will need to callibrate this for your own experimental setup. A raspberrypi fisheye lense for the camera may also be useful.
  * A sense hat
  * python3 
+ * A computer with a camera application to monitor the experiment and an SSH key for the pi
 
 The lab will need a raspberrypi set up to run JAgameCollect and a separate machine to host the RESTJA API and database. This is because the JAgameCollect program is designed to be run in an always running process using systemd. The API should be hosted on a machine that is never turned off, or on a cloud service. If the experimenter wishes to not run JAgameCollect on systemd they can elect to ssh into the raspberrypi and run the JAgameCollect program manually for each trial. I would recommend, if the lab doesn't want any data leaving the building to use an old machine or SBC that can run Debian Linux or Debian based distro. See the API README, it was developed on Ubuntu 24 and tested using a laptop for hosting.
 
@@ -39,6 +40,27 @@ We need to find the position of the center of the ball from frame to frame.
     5 An adaption on the MOSSE (Minimum Output Sum of Square error) algorithm [3]  is used to track the ball from frame to frame. This approach (Tracking) is more computationally efficient that running the detection stage alone on ever frame. The basic idea of MOSSE (and CSRT which was actually used) is to learn the object statistics from the first frame captured and then use this found information in subsequent frame, adapting the object statistics from frame to frame, allowing for slight changes (for example how the electrical tape covering the ball creates slight creases which make it not exactly spherical).
     
         - 5.1 If the tracker looses the ball the function goes back to step 2, and detects the ball again.
+
+## X11
+
+To run the experiment the experimenter will need to ssh into the pi. The camera app on the experrimenters machine will automatically launch and will display the stream of information being picked up and used by the computer vision algorithm. The countours of the scene and the place in the scene that the detection of tracking parts of the Computer vision pipeline as the object of interest will be displayed. I considered setting up the experiment to run on systemd so that it would always be running, but that wouldn't be practical as the experimenter would really need to monitor the Computer vision pipeline using their computer because sometimes light artifacts cause issues. 
+The experimenter can press "q" any time to quit the camera app and the game. In the case data will still be send to the api, but it is expected that the experimenter would remove any game where there was no winner from the analysis, as they would indicate that the vision pipeline didn't capture the ball movement properly
+
+
+```
+# Here are the commands the experimenter would need to run to run a trial
+
+ssh -X pi@raspberrypi.local 
+
+cd JAgame
+
+source .venv/bin/activate
+
+python main.py
+
+```
+
+![Fig.1 The camera app on my laptop monitoring the vision pipeline over x11](data/X11monitoring.png)
 
 ## MQTT
 

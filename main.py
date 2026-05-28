@@ -77,6 +77,8 @@ def trackBall(side, cx, cy, xMin = None, xMax = None, yMin = None, yMax = None, 
     if xMin < cx < xMax and yMin < cy < yMax: 
         print(f"Somebody Scored")
         
+        with open(statePath, "r") as f:
+            stateData = json.load(f)
 
         stateData[playerScore] = int(stateData[playerScore]) + 1
                 
@@ -94,7 +96,7 @@ def trackBall(side, cx, cy, xMin = None, xMax = None, yMin = None, yMax = None, 
             # it is included here as some defensive coding
         if int(stateDataJson[playerScore]) >=  maxScore:
 
-            stateDataJson["winner"] = playerName
+            stateDataJson["winner"] = stateDataJson[playerName]
             with open(statePath, "w") as f:
                 json.dump(stateDataJson, f)
 
@@ -176,7 +178,7 @@ def captureData():
         with open(STATE_PATH, "r") as f:
             stateData = json.load(f)
 
-        gameData = np.append(gameData, np.array([stateData["PlayerOneName"], stateData["PlayerTwoName"], stateData["ts"],  stateData["playerOneScore"], stateData["playerTwoScore"], cx, cy]))
+        gameData = np.append(gameData, np.array([stateData["playerOneName"], stateData["playerTwoName"], stateData["ts"],  stateData["playerOneScore"], stateData["playerTwoScore"], cx, cy]))
         try:
             cv2.imshow("Camera", output)
         except:
@@ -204,13 +206,13 @@ def on_message(client, userdata, msg):
         exit
 
     # A beginning timestamp will be useful the experimenter wants to do time series analysis
-    data["ts"] = int(time.time())
+    data["ts"] = time.time()
     # Both players start with 0 scores
     data["playerOneScore"] = 0
     data["playerTwoScore"] = 0
     data["winner"] = ""
 
-    gameData = np.append(gameData, np.array([data["PlayerOneName"], data["PlayerTwoName"], data["ts"],  data["playerOneScore"], data["playerTwoScore"], None, None]))
+    gameData = np.append(gameData, np.array([data["playerOneName"], data["playerTwoName"], data["ts"],  data["playerOneScore"], data["playerTwoScore"], None, None]))
 
     with open(STATE_PATH, "w") as f:
         json.dump(data, f)
