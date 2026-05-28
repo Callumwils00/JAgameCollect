@@ -67,12 +67,16 @@ def trackBall(side, cx, cy, xMin = None, xMax = None, yMin = None, yMax = None, 
     # Store json key references as strings
     playerName = side + "Name"
     playerScore = side + "Score"
+    
+    with open(statePath, "r") as f:
+        stateData = json.load(f)
+
+    stateData = int(time.time())
     # Using and rather than bitwise &
+    
     if xMin < cx < xMax and yMin < cy < yMax: 
         print(f"Somebody Scored")
         
-        with open(statePath, "r") as f:
-            stateData = json.load(f)
 
         stateData[playerScore] = int(stateData[playerScore]) + 1
                 
@@ -165,6 +169,8 @@ def captureData():
 
         else:
             tracker = None # The ball is lost so re-detect in the next frame
+            cx = None
+            cy = None
 
         
         with open(STATE_PATH, "r") as f:
@@ -186,10 +192,17 @@ def on_connect(client, userdata, flags, rc):
     print("Subscribed to:", MQTT_TOPIC, " and ", MQTT_SEND_TOPIC) 
 
 def on_message(client, userdata, msg):
+    global runGame
+    global gameData
     print("MQTT message on ", msg.topic)
     payload_str = msg.payload.decode("utf-8")
     # Setting up the initial state of the experiment
     data = json.loads(payload_str)
+    
+    if(data["quit"] == "true"):
+        runGame = False
+        exit
+
     # A beginning timestamp will be useful the experimenter wants to do time series analysis
     data["ts"] = int(time.time())
     # Both players start with 0 scores
@@ -197,7 +210,6 @@ def on_message(client, userdata, msg):
     data["playerTwoScore"] = 0
     data["winner"] = ""
 
-    global gameData
     gameData = np.append(gameData, np.array([data["PlayerOneName"], data["PlayerTwoName"], data["ts"],  data["playerOneScore"], data["playerTwoScore"], None, None]))
 
     with open(STATE_PATH, "w") as f:
@@ -220,13 +232,14 @@ def on_message(client, userdata, msg):
         print(f"Sent Message")
     else:
         print(f"Failed to send message")
-    global runGame
+
     runGame = True
     
     #im = camera.capture_array()
     #cv2.imshow("Camera", im)
 def main():
     while runGame is True:
+        on_message
         captureData()
         if cv2.waitKey(1) & 0xFF == ord('q'):
             cv2.destroyAllWindows() 

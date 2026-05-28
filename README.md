@@ -40,7 +40,10 @@ We need to find the position of the center of the ball from frame to frame.
     
         - 5.1 If the tracker looses the ball the function goes back to step 2, and detects the ball again.
 
-    
+## MQTT
+
+## HTTP
+ 
 # References 
 
 [2] https://doi.org/10.1098/rspb.1980.0020
