@@ -4,6 +4,10 @@ This program is the data collection service of the Joint Action game platform an
 
 JAgameCollect uses a raspberrypi to collect visual and gyroscopic information about the Joint action game (See proposal) and send on relevant information to the webpage over MQTT and the database over http. 
 
+## Setup
+
+Below I have given comprehensive information on setting up the experiment. Some of it is relevent to the experiment setup itself (the vision problem discussion) the rest is targetted at a lab technition or experimenter with some basic knowledge of unix/linux.
+
 ### Requirements:
 
 * A raspberrypi compatible with the camera module 3 and the sense hat. This platform was developed on a raspberrypi 4B, but should work on other RPi's with the 40-pin GPIO headers.
@@ -62,6 +66,57 @@ python main.py
 
 ![Fig.1 The camera app on my laptop monitoring the vision pipeline over x11](data/X11monitoring.png)
 
+First set up ssh keys on the experimenters machine and the raspberrypi
+
+On the experimenters laptop run generate an ssh key
+
+```
+ssh-keygen -t ed25519 -c "emailaddress@example.com"
+
+# accept the default location to store the key in the .ssh folder
+```
+
+Copy the public ssh key to the RPI
+
+```
+scp ~/.scp/id_ed25519 pi@raspberrypi.local:~/.ssh
+
+```
+
+Once this key is set up the Rpi can be ssh's into without needing to enter a password. This is important for making code modification with local ide's possible and using x11 to monitor the experiment.
+
+
+Now to set up x11
+
+First update the pi and install openssh-server.
+
+```
+sudo apt update
+sudo apt install openssh-server
+```
+\
+Now open the sshd configuration file
+
+```
+sudo vim /etc/ssh/sshd_config
+```
+\
+In this file navigate to the commented out line "#X11Forwarding yes" and uncomment
+\
+Then restart the ssh service
+
+```
+sudo systemctl restart ssh 
+```
+
+Now when the experimenter ssh's into the pi using 
+
+```
+ssh -X pi@raspberrypi.local
+
+```
+and runs the experiment the camera app on their laptop will behave as described above.
+
 ## MQTT
 
 ## HTTP
@@ -71,3 +126,5 @@ python main.py
 [2] https://doi.org/10.1098/rspb.1980.0020
 
 [3] https://doi.org/10.1109/CVPR.2010.5539960
+
+
