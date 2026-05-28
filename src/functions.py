@@ -27,11 +27,6 @@ def detectBall(edges = None):
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     largest = max(contours, key=cv2.contourArea)
     print(f"Contours found: {len(contours)}")
-def detectBall(edges = None):
-    global tracker
-    contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    largest = max(contours, key=cv2.contourArea)
-    print(f"Contours found: {len(contours)}")
     if cv2.contourArea(largest) > 20:
         # In python you can assign values to multiple objects using assignment without them being a list or array
         # Here I only want to draw a rectangle around the largest contour, representing the ball... hopefully
@@ -46,73 +41,6 @@ def detectBall(edges = None):
         x, y, w, h = cv2.boundingRect(largest)
         tracker = cv2.TrackerCSRT_create()
         return x, y, w, h, tracker
-
-def trackBall(side, cx, cy, xMin = None, xMax = None, yMin = None, yMax = None, maxScore= 10, statePath = STATE_PATH, mqttTopic = MQTT_SEND_TOPIC):
-    global gameData
-    global runGame
-    
-    if side not in ["playerOne", "playerTwo"]:
-        warnings.warn("side parameter must be in ['playerOne', 'playerTwo']")
-        #return None 
-
-    # Store json key references as strings
-    playerName = side + "Name"
-    playerScore = side + "Score"
-    
-    with open(statePath, "r") as f:
-        stateData = json.load(f)
-
-    stateData = int(time.time())
-    # Using and rather than bitwise &
-    
-    if xMin < cx < xMax and yMin < cy < yMax: 
-        print(f"Somebody Scored")
-        
-        with open(statePath, "r") as f:
-            stateData = json.load(f)
-
-        stateData[playerScore] = int(stateData[playerScore]) + 1
-                
-        with open(statePath, "w") as f:
-            json.dump(stateData, f)
-
-        with open(statePath, "r") as f:
-            stateDataJson = json.load(f)
-            
-            stateData = str(stateDataJson)
-            stateData = stateData.replace("'", '"')
-            print(stateData)
-               
-            # If a score field in the state is greater than 10 something has gone wron
-            # it is included here as some defensive coding
-        if int(stateDataJson[playerScore]) >=  maxScore:
-
-            stateDataJson["winner"] = stateDataJson[playerName]
-            with open(statePath, "w") as f:
-                json.dump(stateDataJson, f)
-
-            with open(statePath, "r") as f:
-                stateDataJson = json.load(f)
-            
-            stateData = str(stateDataJson)
-            stateData = stateData.replace("'", '"')
-
-            status = mqtt_client.publish(mqttTopic, stateData)
-            runGame = False  
-        else:
-            status = mqtt_client.publish(mqttTopic, stateData)
-
-        if status == 0:
-            print(f"Sent Message")
-        else:
-            print(f"No Score")
-
-       # with open(statePath, "r") as f:
-        #    stateDataJson = json.load(f)
-
-       # gameData = np.append(gameData, np.array([stateDataJson["PlayerOneName"], stateDataJson["PlayerTwoName"], stateDataJson["ts"],  stateDataJson["playerOneScore"], stateDataJson["playerTwoScore"], None, None]))
-       # print(gameData)
-
 
 
 
