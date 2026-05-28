@@ -42,6 +42,73 @@ sense = SenseHat()
 
 gameData = np.array([[], [], [], [], [], [],[]])        
 
+def trackBall(side, cx, cy, xMin = None, xMax = None, yMin = None, yMax = None, maxScore= 10, statePath = STATE_PATH, mqttTopic = MQTT_SEND_TOPIC):
+    global gameData
+    global runGame
+    
+    if side not in ["playerOne", "playerTwo"]:
+        warnings.warn("side parameter must be in ['playerOne', 'playerTwo']")
+        #return None 
+
+    # Store json key references as strings
+    playerName = side + "Name"
+    playerScore = side + "Score"
+    
+    with open(statePath, "r") as f:
+        stateData = json.load(f)
+
+    stateData = int(time.time())
+    # Using and rather than bitwise &
+    
+    if xMin < cx < xMax and yMin < cy < yMax: 
+        print(f"Somebody Scored")
+        
+        with open(statePath, "r") as f:
+            stateData = json.load(f)
+
+        stateData[playerScore] = int(stateData[playerScore]) + 1
+                
+        with open(statePath, "w") as f:
+            json.dump(stateData, f)
+
+        with open(statePath, "r") as f:
+            stateDataJson = json.load(f)
+            
+            stateData = str(stateDataJson)
+            stateData = stateData.replace("'", '"')
+            print(stateData)
+               
+            # If a score field in the state is greater than 10 something has gone wron
+            # it is included here as some defensive coding
+        if int(stateDataJson[playerScore]) >=  maxScore:
+
+            stateDataJson["winner"] = stateDataJson[playerName]
+            with open(statePath, "w") as f:
+                json.dump(stateDataJson, f)
+
+            with open(statePath, "r") as f:
+                stateDataJson = json.load(f)
+            
+            stateData = str(stateDataJson)
+            stateData = stateData.replace("'", '"')
+
+            status = mqtt_client.publish(mqttTopic, stateData)
+            runGame = False  
+        else:
+            status = mqtt_client.publish(mqttTopic, stateData)
+
+        if status == 0:
+            print(f"Sent Message")
+        else:
+            print(f"No Score")
+
+       # with open(statePath, "r") as f:
+        #    stateDataJson = json.load(f)
+
+       # gameData = np.append(gameData, np.array([stateDataJson["PlayerOneName"], stateDataJson["PlayerTwoName"], stateDataJson["ts"],  stateDataJson["playerOneScore"], stateDataJson["playerTwoScore"], None, None]))
+       # print(gameData)
+
+
 def on_connect(client, userdata, flags, rc):
     print("MQTT connected with result code", rc)
     client.subscribe(MQTT_TOPIC, 1)
