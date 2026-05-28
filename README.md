@@ -8,6 +8,15 @@ JAgameCollect uses a raspberrypi to collect visual and gyroscopic information ab
 
 Below I have given comprehensive information on setting up the experiment. Some of it is relevent to the experiment setup itself (the vision problem discussion) the rest is targetted at a lab technition or experimenter with some basic knowledge of unix/linux.
 
+### Physical set up
+
+![Fig.1](data/ExperimentImage1.png)
+\
+![Fig.2](data/ExperimentImage2.png)
+
+\
+![Fig.3](data/ExperimentImage3.png)
+
 ### Requirements:
 
 * A raspberrypi compatible with the camera module 3 and the sense hat. This platform was developed on a raspberrypi 4B, but should work on other RPi's with the 40-pin GPIO headers.
