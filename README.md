@@ -29,15 +29,15 @@ We need to find the position of the center of the ball from frame to frame.
 
 ## Pipeline
 
-    1 A frame is caputured using the piCamera and the Picamera2 method .capture_array(). This frame will be an array of pixel values from 0 to 255.
+1. A frame is caputured using the piCamera and the Picamera2 method .capture_array(). This frame will be an array of pixel values from 0 to 255.
 
 ### Object ***Detection***
 
-    2 Find the Edges. First the frame is converted to grayscale using the opencv COLOR_RBG2GRAY field [1] and gaussian blur is applied to smooth over some of the small high frequency intensity changes in the frame.
+2. Find the Edges. First the frame is converted to grayscale using the opencv COLOR_RBG2GRAY field [1] and gaussian blur is applied to smooth over some of the small high frequency intensity changes in the frame.
 
-    3 The changes in the intensity of the frame is used to detect edges. Actually canny edge detection is used over laplacian. But the basic idea is that the zero-crossings are found by getting the second derivative of the gaussian of the frame (see Marr Hildreth edge detection [2]  as a starting point, and then canny edge detection).
+3. The changes in the intensity of the frame is used to detect edges. Actually canny edge detection is used over laplacian. But the basic idea is that the zero-crossings are found by getting the second derivative of the gaussian of the frame (see Marr Hildreth edge detection [2]  as a starting point, and then canny edge detection).
 
-    4 The edges are linked up into contours, ie. continuous edges and the largest contour is found. This step is important since artifacts (objects that aren't the ball like where the white paper on the bottom of the surface)  can be and are often detected.
+4. The edges are linked up into contours, ie. continuous edges and the largest contour is found. This step is important since artifacts (objects that aren't the ball like where the white paper on the bottom of the surface)  can be and are often detected.
 
 ### Object ***Tracking***
 
