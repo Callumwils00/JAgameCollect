@@ -11,6 +11,7 @@ import paho.mqtt.client as mqtt
 from picamera2 import Picamera2
 import warnings
 import requests
+import functions
 
 MQTT_BROKER = "broker.hivemq.com"
 # The MQTT port here is different to the port referenced in the web page (8884)
