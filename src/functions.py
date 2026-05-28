@@ -6,6 +6,7 @@ import cv2
 import json
 import time
 import numpy as np
+import warnings
 
 tracker = None
 STATE_PATH = "data/state.json"

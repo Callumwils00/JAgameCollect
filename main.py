@@ -12,6 +12,7 @@ from picamera2 import Picamera2
 import warnings
 import requests
 import src.functions as functions
+import src.mqtt_setup as mqtt_setup
 
 MQTT_BROKER = "broker.hivemq.com"
 # The MQTT port here is different to the port referenced in the web page (8884)
@@ -121,9 +122,9 @@ def on_publish(client, userdata, msg):
 
 # Set up MQTT client
 mqtt_client = mqtt.Client()
-mqtt_client.on_connect = on_connect 
-mqtt_client.on_message = on_message
-mqtt_client.on_publish = on_publish
+mqtt_client.on_connect = mqtt_setup.on_connect 
+mqtt_client.on_message = mqtt_setup.on_message
+mqtt_client.on_publish = mqtt_setup.on_publish
 
 mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60) 
 mqtt_client.loop_start()
@@ -133,6 +134,18 @@ mqtt_client.loop_start()
 if __name__ == "__main__":
     while not runGame:
         time.sleep(0.1)
+    with open(STATE_PATH, "r") as f:
+        stateData = json.load(f)
+    gameData = np.append(gameData, np.array([stateData["playerOneName"],
+                                             stateData["playerTwoName"],
+                                             stateData["playerOneScore"],
+                                             stateData["playerTwoScore"],
+                                             None,
+                                             None]))
+    time.sleep(2)
+    sense.clear(255,255,255)
+    time.sleep(0.2)
+    sense.clear()
     main()
 
 

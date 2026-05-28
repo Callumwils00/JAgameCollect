@@ -1,5 +1,9 @@
 #! /bin/python
 
+import json
+import time
+import numpy as np
+
 MQTT_BROKER = "broker.hivemq.com"
 # The MQTT port here is different to the port referenced in the web page (8884)
 # That is because this program can send to the MQTT broker directly since it isn't sending
@@ -20,7 +24,7 @@ def on_message(client, userdata, msg):
     global gameData
     print("MQTT message on ", msg.topic)
     payload_str = msg.payload.decode("utf-8")
-    # Setting up the initial state of the experiment
+    # Setting up the initial istate of the experiment
     data = json.loads(payload_str)
     
     if(data["quit"] == "true"):
@@ -34,16 +38,10 @@ def on_message(client, userdata, msg):
     data["playerTwoScore"] = 0
     data["winner"] = ""
 
-    gameData = np.append(gameData, np.array([data["playerOneName"], data["playerTwoName"], data["ts"],  data["playerOneScore"], data["playerTwoScore"], None, None]))
-
     with open(STATE_PATH, "w") as f:
         json.dump(data, f)
     print("State updated:", payload_str)
-    # The game starts when the sense hat flashes
-    time.sleep(3)
-    sense.clear(255,255,255)
-    time.sleep(0.2)
-    sense.clear()
+    
            
     with open(STATE_PATH, "r") as f:
         stateData = json.load(f)
@@ -52,6 +50,7 @@ def on_message(client, userdata, msg):
     stringState = stringState.replace("'", '"')
     print(stringState)
     status = mqtt_client.publish(MQTT_SEND_TOPIC, stringState, 1) 
+    
     if status == 0:
         print(f"Sent Message")
     else:
