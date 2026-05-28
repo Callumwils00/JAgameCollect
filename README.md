@@ -127,4 +127,8 @@ and runs the experiment the camera app on their laptop will behave as described 
 
 [3] https://doi.org/10.1109/CVPR.2010.5539960
 
+[4] https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
+
+[5] https://linuxconfig.org/how-to-enable-x11-forwarding-on-raspberry-pi
+
 
