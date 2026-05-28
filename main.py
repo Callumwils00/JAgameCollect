@@ -29,11 +29,13 @@ STATE_PATH = "data/state.json"
 runGame = False
 endProgram = False
 
+
 sense = SenseHat()
 my_stream = BytesIO()
 camera = Picamera2()
 WIDTH = 700
 HEIGHT = 700
+# To use the camera we configure the preview
 config = camera.create_preview_configuration({'format': 'RGB888', 'size': (WIDTH, HEIGHT)})
 camera.configure(config)
 camera.start()

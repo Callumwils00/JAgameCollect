@@ -23,7 +23,7 @@ If the experimenter wishes to monitor the ball tracking computer vision process 
 It is assumed that a technicion will set up the experiment and that the experimenter will analyse the data using an api call using Python/MATLAB/R but that outwith analysing their data the experimenter doesn't have programming skills.
 
 
-## Vision Science problem
+## Vision problem
 
 We need to find the position of the center of the ball from frame to frame.
 
@@ -83,7 +83,7 @@ scp ~/.scp/id_ed25519 pi@raspberrypi.local:~/.ssh
 
 ```
 
-Once this key is set up the Rpi can be ssh's into without needing to enter a password. This is important for making code modification with local ide's possible and using x11 to monitor the experiment.
+Once this key is set up the Rpi can be ssh's into without needing to enter a password [4]. This is important for making code modification with local ide's possible and using x11 to monitor the experiment [5].
 
 
 Now to set up x11
