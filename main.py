@@ -40,7 +40,7 @@ sense = SenseHat()
 
 # Initalise an empty numpy array 
 
-gameData = np.array([[], [], [], [], [], [],[]])        
+gameData = np.array([[], [], [], [], [], [],[], [], [], []])        
 
 
 
@@ -178,7 +178,13 @@ def captureData(camera, dataArray):
             yMin = (h // 4) * 3
             yMax = h
             trackBall("playerTwo", cx, cy, xMin, xMax, yMin, yMax)
+            
+            # get_gyroscope returns the pitch, roll and yaw in degrees
+            gyroData = sense.get_gyroscope()
 
+            gx = gyroData['pitch']
+            gy = gyroData['roll']
+            gz = gyroData['yaw']
             # By placing the data appending line here, no data is appended when there is a frame with a lost ball. Since the timestamp is captured the scientist will still be able to reconstruct the time series of the ball movement.
      #       gameData = np.append(gameData, np.array([gameData[1], gameData[2], int(time.time()),  stateDataJson["playerOneScore"], stateDataJson["playerTwoScore"], stateDataJson["winner"], None]))
 
@@ -187,12 +193,15 @@ def captureData(camera, dataArray):
             tracker = None # The ball is lost so re-detect in the next frame
             cx = None
             cy = None
+            gx = None
+            gy = None
+            gz = None
 
         
         with open(STATE_PATH, "r") as f:
             stateData = json.load(f)
 
-        gameData = np.append(dataArray, np.array([stateData["playerOneName"], stateData["playerTwoName"], stateData["ts"],  stateData["playerOneScore"], stateData["playerTwoScore"], cx, cy]))
+        gameData = np.append(dataArray, np.array([stateData["playerOneName"], stateData["playerTwoName"], stateData["ts"],  stateData["playerOneScore"], stateData["playerTwoScore"], gx, gy, gz, cx, cy]))
         try:
             cv2.imshow("Camera", output)
         except:
@@ -311,6 +320,9 @@ if __name__ == "__main__":
                                              stateData["playerOneScore"],
                                              stateData["playerTwoScore"],
                                              None,
+                                             None,
+                                             None,
+                                             None,
                                              None]))
     time.sleep(2)
     sense.clear(255,255,255)
@@ -319,9 +331,9 @@ if __name__ == "__main__":
     main()
 
 
-gameData = np.reshape(gameData, (-1, 7))
+gameData = np.reshape(gameData, (-1, 10))
 
-gameDataPd = pd.DataFrame({'playerOneName': gameData[:,0], 'playerTwoName': gameData[:,1], 'timeStamp': gameData[:,2], 'playerOneScore': gameData[:,3], 'playerTwoScore': gameData[:,4], 'gyroOne': gameData[:,5], 'gyroTwo': gameData[:,6]})
+gameDataPd = pd.DataFrame({'playerOneName': gameData[:,0], 'playerTwoName': gameData[:,1], 'timeStamp': gameData[:,2], 'playerOneScore': gameData[:,3], 'playerTwoScore': gameData[:,4], 'gyroX': gameData[:,5], 'gyroY': gameData[:,6], 'gyroZ': gameData[:,7], 'ballPosX': gameData[:,8], 'ballPosY': gameData[:,9]})
 
 gameDataJson = gameDataPd.to_json(orient = "records")
 print(gameDataJson)
