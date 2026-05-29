@@ -58,8 +58,7 @@ We need to find the position of the center of the ball from frame to frame.
 ## X11
 
 To run the experiment the experimenter will need to ssh into the pi. The camera app on the experrimenters machine will automatically launch and will display the stream of information being picked up and used by the computer vision algorithm. The countours of the scene and the place in the scene that the detection of tracking parts of the Computer vision pipeline as the object of interest will be displayed. I considered setting up the experiment to run on systemd so that it would always be running, but that wouldn't be practical as the experimenter would really need to monitor the Computer vision pipeline using their computer because sometimes light artifacts cause issues. 
-The experimenter can press "q" any time to quit the camera app and the game. In the case data will still be send to the api, but it is expected that the experimenter would remove any game where there was no winner from the analysis, as they would indicate that the vision pipeline didn't capture the ball movement properly
-
+The experimenter can press "q" any time to quit the camera app and the game. In this case data won't  be send to the api, so participants can quit the game at any time by telling the experimenter, the experimenter can then press "q" to close the experiment and not send any data to the api.
 
 ```
 # Here are the commands the experimenter would need to run to run a trial
@@ -129,7 +128,26 @@ and runs the experiment the camera app on their laptop will behave as described 
 
 ## MQTT
 
+Since the Pi does not need to use websockets, the MQTT port for "broker.hivemq.com" is 1883. Since the program both reveives and sends data, and we want to separate the incoming and outgoing streams two topics are used 
+
+```
+MQTT_TOPIC = "test/JAgame/fromWebPage"
+MQTT_SEND_TOPIC = "test/JAgame/toWebPage"
+```
+
+The mqtt broker "broker.hivemq.com" is a public mqtt broker. This is another thing to rethink. If you are running this experiment in your lab you'll likely need to either host your own mqtt broker like Eclipse Mosquitto on a server. If I was going to run this with real participants I would get an old computer, or an extra single board and host an mqtt broker and the PowerShift API [PowerShiftAPI](https://github.com/Callumwils00/PowerShiftAPI) on it so that no data leaves the network, and the api would always be available on the network without needing to start it up every time the experimenter needs to use it.
+
+The Quality of service throughout this program for MQTT is 1 maining that the messages are sent at least once.
+
 ## HTTP
+
+This program uses HTTP to send the data to the PowerShift API. I designed it to only make one http put request or every experiment, rather than sending every row individually to avoid performance issues. My approach is to create an empty numpy array, and then append each row to the empty array as it is calculated, leaving us with one np array. This is than converted into a pandas dataframe and then into a json array. The requests library is then used to send this array as data to the PowerShift api as a PUT request.
+
+
+```
+
+
+```
  
 # References 
 

@@ -279,7 +279,7 @@ def main():
         captureData(camera, gameData)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             cv2.destroyAllWindows() 
-            break
+            exit
 
 def save_state(path=""):
     now = datetime.now()
