@@ -152,7 +152,12 @@ This program uses HTTP to send the data to the PowerShift API. I designed it to 
 
 
 ```
+gameDataJson = gameDataPd.to_json(orient = "records")
 
+# Need to point the url to my laptop not to localhost, since the api isn't running locally
+url = "http://192.168.1.124:5000"
+
+requests.put(url, gameDataJson)
 
 ```
  
