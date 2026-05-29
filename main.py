@@ -50,7 +50,7 @@ def trackBall(side, cx, cy, xMin = None, xMax = None, yMin = None, yMax = None, 
     
     if side not in ["playerOne", "playerTwo"]:
         warnings.warn("side parameter must be in ['playerOne', 'playerTwo']")
-        #return None 
+        return None 
 
     # Store json key references as strings
     playerName = side + "Name"
@@ -159,10 +159,13 @@ def captureData(camera, dataArray):
     else:
         sucess, bbox = tracker.update(output)
         if sucess:
+            # calculate the middle of the ball as the box width divided by 2 and height dividided by 2
             x, y, w, h = (int(v) for v in bbox)
             cx = x + w // 2
             cy = y + h // 2
+            # Draw a rectangle using the bbox coordinates
             cv2.rectangle(output, (x,  y), (x + w, y + h), (0, 255, 0), 2)
+            # Dray the ball center with a red dot
             cv2.circle(output, (cx, cy), 5, (0, 0, 255), -1)
             print(f"Object at: ({cx}, {cy})")
            # Configuring the goal areas 
@@ -281,17 +284,18 @@ def main():
             cv2.destroyAllWindows() 
             sys.exit("Game Interrupted, exiting")
 
-def save_state(path=""):
-    now = datetime.now()
-    payload = {
+# Not used
+#def save_state(path=""):
+#    now = datetime.now()
+#    payload = {
            # "player0ne": name1,
            # "playerTwo": name2,
-            "playerOneScore": 0,
-            "playerTwoScore": 1
-            }
-    with open(path, "w") as f:
-        json.dump(payload, f)
-    print("State saved:", payload)
+#            "playerOneScore": 0,
+#            "playerTwoScore": 1
+#            }
+#    with open(path, "w") as f:
+#        json.dump(payload, f)
+#    print("State saved:", payload)
 
 def on_publish(client, userdata, msg):
     with open(STATE_PATH, "r") as file:
@@ -310,6 +314,7 @@ mqtt_client.loop_start()
 # This will hold the program from starting to collect game data until the 
 # game is started from the web page
 if __name__ == "__main__":
+    # This will pause the main function until the names are input and sent from the webpage
     while not runGame:
         time.sleep(0.1)
     with open(STATE_PATH, "r") as f:
@@ -341,6 +346,7 @@ print(gameDataJson)
 # Need to point the url to my laptop not to localhost, since the api isn't running locally
 url = "http://192.168.1.124:5000"
 
+# Sending a http put request from python
 requests.put(url, gameDataJson)
 
 sys.exit("Ending Game")
