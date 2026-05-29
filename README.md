@@ -11,13 +11,20 @@ Below I have given comprehensive information on setting up the experiment. Some 
 ### Physical set up
 
 ![Fig.1](data/ExperimentImage1.png)
-\
+
+*Above: Top down view of the game*
+
 ![Fig.2](data/ExperimentImage2.png)
 
-\
+*Above: Side view of the game*
+
 ![Fig.3](data/ExperimentImage3.png)
-\
-![Demo video](data/Demo.mp4)
+
+*Above: side view of the game showing how the sides are whited out using paper*
+
+
+My Rig is a quick demo, for actual experimental trials I'd recommend using a larger board, made out of wooden board or similar and a fixed mount for the RPi and camera so it can't create movement artifacts in the data.
+
 ### Requirements:
 
 * A raspberrypi compatible with the camera module 3 and the sense hat. This platform was developed on a raspberrypi 4B, but should work on other RPi's with the 40-pin GPIO headers.
@@ -51,9 +58,9 @@ We need to find the position of the center of the ball from frame to frame.
 
 ### Object ***Tracking***
 
-    5 An adaption on the MOSSE (Minimum Output Sum of Square error) algorithm [3]  is used to track the ball from frame to frame. This approach (Tracking) is more computationally efficient that running the detection stage alone on ever frame. The basic idea of MOSSE (and CSRT which was actually used) is to learn the object statistics from the first frame captured and then use this found information in subsequent frame, adapting the object statistics from frame to frame, allowing for slight changes (for example how the electrical tape covering the ball creates slight creases which make it not exactly spherical).
-    
-        - 5.1 If the tracker looses the ball the function goes back to step 2, and detects the ball again.
+5.  An adaption on the MOSSE (Minimum Output Sum of Square error) algorithm [3]  is used to track the ball from frame to frame. This approach (Tracking) is more computationally efficient that running the detection stage alone on ever frame. The basic idea of MOSSE (and CSRT which was actually used) is to learn the object statistics from the first frame captured and then use this found information in subsequent frame, adapting the object statistics from frame to frame, allowing for slight changes (for example how the electrical tape covering the ball creates slight creases which make it not exactly spherical).
+
+6. If the tracker looses the ball the function goes back to step 2, and detects the ball again.
 
 ## X11
 
